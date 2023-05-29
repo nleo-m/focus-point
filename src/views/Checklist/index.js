@@ -8,6 +8,7 @@ import {
   TouchableHighlight,
   SectionList,
 } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 import { getFormattedDate } from "../../functions/date";
 
@@ -19,6 +20,25 @@ export default () => {
   const addTask = () => {
     setTasks((tasks) => [...tasks, { title: taskInput, added_in: new Date() }]);
     setTaskInput("");
+  };
+
+  const completeTask = (task) => {
+    task.completed_in = new Date();
+
+    setTasks((tasks) => tasks.filter((t) => t?.title !== task?.title));
+    setCompletedTasks((completedTasks) => [...completedTasks, task]);
+
+    console.log(tasks);
+  };
+
+  const getTasks = () => {
+    const data = [];
+    if (tasks?.length > 0) data.push({ title: "Pending", data: tasks });
+
+    if (completedTasks?.length > 0)
+      data.push({ title: "Completed", data: completedTasks });
+
+    return data;
   };
 
   return (
@@ -34,34 +54,35 @@ export default () => {
           <Text style={{ color: "white" }}>Add</Text>
         </TouchableHighlight>
       </View>
-
-      {tasks?.length < 1 ? (
-        <Text>No tasks to show :D</Text>
-      ) : (
-        <SectionList
-          sections={[
-            { ...(tasks && { title: "Uncompleted", data: tasks }) },
-            {
-              ...(completedTasks && {
-                title: "Completed",
-                data: completedTasks,
-              }),
-            },
-          ]}
-          keyExtractor={(item, index) => item + index}
-          renderItem={({ item }) => (
-            <View style={styles.item}>
+      <SectionList
+        sections={getTasks() || []}
+        keyExtractor={(item, index) => item + index}
+        ListEmptyComponent={<Text>No tasks to show :D</Text>}
+        renderItem={({ item, section }) => (
+          <View style={styles.item}>
+            <Ionicons
+              style={{ marginHorizontal: 7 }}
+              name={
+                section?.title === "Pending" ? "square-outline" : "checkbox"
+              }
+              size={32}
+              color={section?.title === "Pending" ? "#CED0E8" : "#45B0DE"}
+              onPress={() => completeTask(item)}
+            />
+            <View>
               <Text style={styles.title}>{item?.title}</Text>
               <Text style={styles.timestamp}>
-                {getFormattedDate(item.added_in)}
+                {section?.title === "Pending"
+                  ? `Added in ${getFormattedDate(item?.added_in)}`
+                  : `Completed in ${getFormattedDate(item?.completed_in)}`}
               </Text>
             </View>
-          )}
-          renderSectionHeader={({ section: { title } }) => (
-            <Text style={styles.header}>{title}</Text>
-          )}
-        />
-      )}
+          </View>
+        )}
+        renderSectionHeader={({ section: { title } }) => (
+          <Text style={styles.header}>{title}</Text>
+        )}
+      />
     </View>
   );
 };
@@ -85,6 +106,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   item: {
+    display: "flex",
+    flexDirection: "row",
     backgroundColor: "white",
     padding: 10,
     marginVertical: 5,
